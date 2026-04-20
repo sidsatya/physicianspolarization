@@ -1,0 +1,46 @@
+
+\begingroup
+\centering
+\begin{tabular}{lcccc}
+   \tabularnewline \midrule \midrule
+   Dependent Variables: & \multicolumn{2}{c}{uninsured\_rate} & \multicolumn{2}{c}{restricted\_exposure\_rate}\\
+                           & Exposure Measure 1 & With FE       & Exposure Measure 2 & With FE \\   
+   Model:                  & (1)                & (2)           & (3)                & (4)\\  
+   \midrule
+   \emph{Variables}\\
+   Constant                & -0.090$^{**}$      &               & -0.008$^{***}$     &   \\   
+                           & (0.036)            &               & (0.002)            &   \\   
+   \% 18--25               & 0.010              & 0.329$^{***}$ & -0.020$^{***}$     & -0.004\\   
+                           & (0.042)            & (0.048)       & (0.002)            & (0.006)\\   
+   \% 26--55               & 0.130$^{***}$      & 0.299$^{***}$ & 0.010$^{***}$      & 0.004\\   
+                           & (0.041)            & (0.048)       & (0.002)            & (0.006)\\   
+   \% < HS                 & 1.28$^{***}$       & 0.338$^{***}$ & 0.025$^{***}$      & 0.005\\   
+                           & (0.100)            & (0.063)       & (0.006)            & (0.008)\\   
+   \% HS                   & 0.121$^{***}$      & 0.137$^{***}$ & 0.004$^{***}$      & 0.007\\   
+                           & (0.024)            & (0.026)       & (0.001)            & (0.004)\\   
+   \% Black                & 0.137$^{***}$      & 0.169$^{**}$  & 0.007$^{***}$      & 0.003\\   
+                           & (0.032)            & (0.078)       & (0.001)            & (0.009)\\   
+   \% White                & 0.081$^{***}$      & -0.028        & 0.005$^{***}$      & 0.011$^{***}$\\   
+                           & (0.029)            & (0.031)       & (0.002)            & (0.004)\\   
+   \% Poverty              & 1.31$^{***}$       & 0.153$^{*}$   & 0.351$^{***}$      & 0.364$^{***}$\\   
+                           & (0.195)            & (0.088)       & (0.021)            & (0.026)\\   
+   \% Healthcare Industry  & -0.432$^{***}$     & -0.089$^{*}$  & -0.008$^{*}$       & -0.005\\   
+                           & (0.109)            & (0.051)       & (0.004)            & (0.007)\\   
+   \midrule
+   \emph{Fixed-effects}\\
+   County                  &                    & Yes           &                    & Yes\\  
+   Year                    &                    & Yes           &                    & Yes\\  
+   \midrule
+   \emph{Fit statistics}\\
+   Observations            & 2,418              & 2,418         & 2,418              & 2,418\\  
+   R$^2$                   & 0.56862            & 0.94898       & 0.57109            & 0.74776\\  
+   \midrule \midrule
+   \multicolumn{5}{l}{\emph{Clustered (County) standard-errors in parentheses}}\\
+   \multicolumn{5}{l}{\emph{Signif. Codes: ***: 0.01, **: 0.05, *: 0.1}}\\
+\end{tabular}
+ 
+\par \raggedright 
+Standard errors clustered at the county level. Exposure measure 1 is the county-level uninsured rate. Exposure measure 2 is the county-level restricted exposure rate, which is the share of adults who are uninsured, in poverty, and eligible for Medicaid.
+\par\endgroup
+
+

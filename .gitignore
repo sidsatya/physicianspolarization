@@ -1,2 +1,4 @@
 physpol_env/*
 .DS_Store
+.env
+data/ipums/*
