@@ -67,7 +67,9 @@ if (length(existing_ddi_files) > 0) {
     description = "ACS 2004-2014 extract via API",
     samples = c(
       "us2008a",
-      "us2009a","us2010a", "us2012a", "us2013a", "us2014a"
+      "us2009a","us2010a", "us2012a", "us2013a", "us2014a",
+      "us2015a", "us2016a", "us2017a", "us2018a", "us2019a", "us2020a",
+      "us2021a", "us2022a", "us2023a", "us2024a"
     ),
     variables = vars_to_pull,
     data_format= "csv",
