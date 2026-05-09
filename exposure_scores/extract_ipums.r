@@ -4,102 +4,176 @@ library(data.table)
 library(readr)
 library(dotenv)
 library(stringr)
+library(purrr)
 
 root_dir <- "~/dev/physicianspolarization"
 save_dir <- "/data/ipums"
 
-# Define the download directory
 download_dir <- file.path(root_dir, "data", "ipums")
+dir.create(download_dir, recursive = TRUE, showWarnings = FALSE)
 
-# Ensure directory exists
-dir.create(download_dir, recursive = TRUE, showWarnings = FALSE) 
+# Load .env and set IPUMS API key up front, because we may need to query extract history
+dotenv::load_dot_env(file = ".env")
+ipums_api_key <- Sys.getenv("IPUMS_API_KEY")
 
-# Check for existing IPUMS data files (usa_XXXXX.xml and usa_XXXXX.csv.gz)
-existing_ddi_files <- list.files(download_dir, pattern = "^usa_\\d+\\.xml$", full.names = TRUE)
-existing_data_files <- list.files(download_dir, pattern = "^usa_\\d+\\.csv\\.gz$", full.names = TRUE)
-# Initialize ddi_file_path
-ddi_file_path <- NULL
+if (is.null(ipums_api_key) || ipums_api_key == "") {
+  stop("IPUMS_API_KEY not found in environment or .env file.")
+}
 
-# Check for existing IPUMS DDI file (usa_XXXXX.xml)
-existing_ddi_files <- list.files(download_dir, pattern = "^usa_\\d+\\.xml$", full.names = TRUE)
+set_ipums_api_key(ipums_api_key, overwrite = TRUE)
 
-if (length(existing_ddi_files) > 0) {
-  # Use the first existing DDI file found (consider sorting by name/date if multiple exist)
-  ddi_file_path <- existing_ddi_files[1]
-  message("Found existing IPUMS DDI file: ", ddi_file_path)
-} else {
-  # No existing DDI found, proceed with API download
-  message("No existing IPUMS DDI file found. Submitting extract request.")
+# Define vars and samples once, so both matching and submission use the same spec
+vars_to_pull <- c(
+  "YEAR",
+  "PERWT",
+  "INCWAGE",
+  "OCCSOC",
+  "IND1990",
+  "COUNTYFIP",
+  "STATEFIP",
+  "CITYPOP",
+  "SEX",
+  "AGE",
+  "POVERTY",
+  "EDUC",
+  "RACE",
+  "CITIZEN",
+  "HCOVANY",
+  "HCOVPUB",
+  "HCOVPRIV",
+  "HINSCAID",
+  "HINSCARE"
+)
 
-  # Load .env file and access your IPUMS API key
-  dotenv::load_dot_env(file = ".env")
-  ipums_api_key <- Sys.getenv("IPUMS_API_KEY")
-  if (is.null(ipums_api_key) || ipums_api_key == "") {
-      stop("IPUMS_API_KEY not found in environment or .env file.")
+samples_to_pull <- c(
+  "us2008a",
+  "us2009a",
+  "us2010a",
+  "us2012a",
+  "us2013a",
+  "us2014a",
+  "us2015a",
+  "us2016a",
+  "us2017a",
+  "us2018a",
+  "us2019a",
+  "us2020a",
+  "us2021a",
+  "us2022a",
+  "us2023a",
+  "us2024a"
+)
+
+extract_description <- "ACS 2008-2024 extract via API"
+
+# Helper: compare extract definitions to the desired request
+extract_matches_spec <- function(extract, samples_to_pull, vars_to_pull, description = NULL) {
+  extract_samples <- names(extract$samples)
+  extract_vars <- names(extract$variables)
+
+  samples_match <- setequal(extract_samples, samples_to_pull)
+
+  # IPUMS may automatically add preselected variables after submission,
+  # so require vars_to_pull to be included rather than exactly equal.
+  vars_match <- all(vars_to_pull %in% extract_vars)
+
+  desc_match <- TRUE
+  if (!is.null(description)) {
+    desc_match <- identical(extract$description, description)
   }
-  set_ipums_api_key(ipums_api_key, overwrite = TRUE)
 
-  # Define vars to pull
-  vars_to_pull <- c("YEAR",
-                    "PERWT",
-                    "INCWAGE",
-                    "OCCSOC",
-                    "IND1990",
-                    "COUNTYFIP",   # County FIPS code
-                    "STATEFIP",    # State FIPS code
-                    "CITYPOP",       
-                    "SEX",
-                    "AGE",
-                    "POVERTY",     # Poverty status
-                    "EDUC",       # Educational attainment
-                    "RACE",
-                    "CITIZEN",
-                    "HCOVANY",     # Any health insurance coverage
-                    "HCOVPUB",     # Public health insurance coverage
-                    "HCOVPRIV",     # Private health insurance coverage
-                    "HINSCAID",     # Medicaid coverage
-                    "HINSCARE"     # Medicare coverage
-                )
+  samples_match && vars_match && desc_match
+}
 
-  # Define the extract
-  extract_def <- define_extract_micro(
-    collection = "usa",
-    description = "ACS 2004-2014 extract via API",
-    samples = c(
-      "us2008a",
-      "us2009a","us2010a", "us2012a", "us2013a", "us2014a",
-      "us2015a", "us2016a", "us2017a", "us2018a", "us2019a", "us2020a",
-      "us2021a", "us2022a", "us2023a", "us2024a"
-    ),
-    variables = vars_to_pull,
-    data_format= "csv",
-    data_structure="rectangular",
-    case_select_who="individuals",
-    data_quality_flags=TRUE
+# Helper: find newest local DDI
+find_local_ddi <- function(download_dir) {
+  ddi_files <- list.files(
+    download_dir,
+    pattern = "^usa_\\d+\\.xml$",
+    full.names = TRUE
   )
 
-  # Submit, wait, download
-  submitted <- submit_extract(extract_def)
-  message("Waiting for extract to complete...")
-  downloaded <- wait_for_extract(submitted)
-  message("Downloading extract files...")
-  # download_extract returns paths to both .xml and .csv.gz
-  downloaded_files <- download_extract(downloaded, download_dir = download_dir)
+  if (length(ddi_files) == 0) return(NULL)
 
-  # Find the downloaded DDI (.xml) file path
+  ddi_files[order(file.info(ddi_files)$mtime, decreasing = TRUE)][1]
+}
+
+# 1. Prefer already-downloaded local extract
+ddi_file_path <- find_local_ddi(download_dir)
+
+if (!is.null(ddi_file_path) && file.exists(ddi_file_path)) {
+  message("Found existing local IPUMS DDI file: ", ddi_file_path)
+
+} else {
+  message("No local DDI found. Checking recent IPUMS USA extracts...")
+
+  recent_extracts <- get_extract_history("usa", how_many = 25)
+
+  matching_extracts <- keep(
+    recent_extracts,
+    ~ extract_matches_spec(
+      .x,
+      samples_to_pull = samples_to_pull,
+      vars_to_pull = vars_to_pull,
+      description = extract_description
+    )
+  )
+
+  ready_matching_extracts <- keep(matching_extracts, is_extract_ready)
+
+  if (length(ready_matching_extracts) > 0) {
+    # Use the most recent matching ready extract
+    extract_to_download <- ready_matching_extracts[[1]]
+
+    message(
+      "Found matching ready IPUMS extract: usa:",
+      extract_to_download$number,
+      ". Downloading..."
+    )
+
+    downloaded_files <- download_extract(
+      extract_to_download,
+      download_dir = download_dir
+    )
+
+  } else {
+    message("No matching ready extract found. Submitting a new extract request.")
+
+    extract_def <- define_extract_micro(
+      collection = "usa",
+      description = extract_description,
+      samples = samples_to_pull,
+      variables = vars_to_pull,
+      data_format = "csv",
+      data_structure = "rectangular",
+      case_select_who = "individuals",
+      data_quality_flags = TRUE
+    )
+
+    submitted <- submit_extract(extract_def)
+
+    message("Waiting for extract to complete...")
+    completed_extract <- wait_for_extract(submitted)
+
+    message("Downloading new extract files...")
+    downloaded_files <- download_extract(
+      completed_extract,
+      download_dir = download_dir
+    )
+  }
+
   downloaded_ddi_file <- downloaded_files[grepl("\\.xml$", downloaded_files)]
 
-  if (length(downloaded_ddi_file) == 1) {
-      ddi_file_path <- downloaded_ddi_file
-      message("Downloaded new IPUMS DDI file: ", ddi_file_path)
+  if (length(downloaded_ddi_file) >= 1) {
+    ddi_file_path <- downloaded_ddi_file[1]
+    message("Using IPUMS DDI file: ", ddi_file_path)
   } else {
-      stop("Could not find the downloaded DDI file (.xml). Download might have failed or returned unexpected results.")
+    stop("Could not find downloaded DDI file (.xml).")
   }
 }
 
-# Ensure a DDI file path was determined
 if (is.null(ddi_file_path) || !file.exists(ddi_file_path)) {
-    stop("Failed to find or download a valid IPUMS DDI file.")
+  stop("Failed to find or download a valid IPUMS DDI file.")
 }
 
 message("Reading IPUMS microdata using the DDI object...")
@@ -197,3 +271,4 @@ county_year_stats <- df %>%
   )
 
 write_csv(county_year_stats, "output/county_year_stats.csv")
+
