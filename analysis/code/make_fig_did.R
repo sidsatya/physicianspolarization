@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 #
 # make_fig_did.R
-# Event-study TWFE figure around T = 2010 for four outcomes, journal style.
+# Event-study TWFE figure around T = 2010 for four outcomes.
 #
 # Input:   analysis/input/county_cycle.parquet
 # Output:  analysis/output/fig_did.{pdf,png}
