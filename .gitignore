@@ -3,7 +3,7 @@ physpol_env/*
 .env
 data/ipums/*
 
-# Raw DIME mimp (5.8 GB; cannot be redistributed via GitHub)
+# Raw DIME mimp (5.8 GB)
 build/input/dime_mimp_1979_2024.rdata
 
 # R / Python session residuals
