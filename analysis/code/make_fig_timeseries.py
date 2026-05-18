@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 make_fig_timeseries.py
-Long-run time-series figures, journal style, two incumbent cohorts overlaid.
+Long-run time-series figures, two incumbent cohorts overlaid.
 
 Input:   analysis/input/cycle_longrun.parquet
 Outputs: analysis/output/fig_share_LR.{pdf,png}
