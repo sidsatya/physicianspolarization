@@ -1,0 +1,7 @@
+var,mean,sd,p10,median,p90,N
+SD of partisan tilt,0.806,0.288,0.401,0.900,1.035,"14,000"
+SD of CF-weighted ideology,0.797,0.303,0.332,0.851,1.136,"14,000"
+Two-pole polarization (CF),0.370,0.324,0.000,0.340,0.840,"14,000"
+Two-pole polarization (tilt),0.623,0.302,0.000,0.673,0.960,"14,000"
+Pre-ACA uninsured rate ($E_c$),0.077,0.033,0.037,0.076,0.117,"14,000"
+Incumbent donors per cell,29,55,5,12,61,"14,000"
