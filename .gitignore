@@ -2,3 +2,13 @@ physpol_env/*
 .DS_Store
 .env
 data/ipums/*
+
+# Raw DIME mimp (5.8 GB; cannot be redistributed via GitHub)
+build/input/dime_mimp_1979_2024.rdata
+
+# R / Python session residuals
+.Rapp.history
+.Rhistory
+__pycache__/
+*.pyc
+.claude/
